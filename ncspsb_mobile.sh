@@ -1,4 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
+
 # ========================================================
 # Pre-Setup for NCSPSB-Mobile: Auto Install + Permissions
 # ========================================================
