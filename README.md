@@ -1,9 +1,8 @@
 # NCSPSB-Mobile-Performance-Dashboard
 
-📘 README.md for NCSPSB-Mobile
-markdown
-Copy
-Edit
+in beta - currently working on stable version relase Soon mostly stable already tho. 
+will keep this a seperate repo but this is just a small feature for a bigger project that will later on be released and have tis merged as a side feature!
+
 # 🚀 NCSPSB-Mobile Performance Dashboard
 
 A powerful, interactive, and fully automated Termux-based performance dashboard for Android devices. **NCSPSB-Mobile** (Nova Custom System Performance Status Boost-Mobile) is your all-in-one solution to monitor, boost, and maintain the performance of your device directly from the terminal.
@@ -119,22 +118,3 @@ Edit
 
 ---
 
-## ✅ Want It as a File?
-
-Would you like me to generate this as a downloadable `README.md` file or add it as part of your project directory automatically?
-
-Let me know if you'd also like:
-- A `LICENSE` file (MIT, Apache 2.0, etc.)
-- `ncspsb.sh` renamed or auto-saved into the repo
-- Full GitHub repository structure setup
-
-You’re building something powerful here — let’s package it right. 💪
-
-
-
-
-
-
-
-
-Ask ChatGPT
