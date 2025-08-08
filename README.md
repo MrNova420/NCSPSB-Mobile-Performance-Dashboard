@@ -99,9 +99,8 @@ Runs system-friendly commands only — no unsafe modifications.
 📚 Credits
 Developed by: Mr Nova (@MrNova420)
 
-Script Engineered for: Personal projects & community performance needs
+Script Engineered for: Personal projects & community personal device performance montoring/boost needs
 
-Inspired by: Unix performance toolkits, Termux CLI power, and mobile modding culture.
 
 📃 License
 This project is open-source and free to use under the MIT License.
