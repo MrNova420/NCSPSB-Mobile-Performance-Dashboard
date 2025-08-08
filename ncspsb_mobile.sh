@@ -1,3 +1,4 @@
+
 #!/data/data/com.termux/files/usr/bin/bash
 
 # ======================================================
@@ -12,7 +13,7 @@
 # - Safe command execution wrapper to continue despite failures
 # - Variables and flags to enable/disable root features and UI modes
 #
-# This code is additive only. Your original 266 lines below remain
+# This code is additive only. Your original 466+ lines script below remain
 # 100% unchanged and fully intact.
 # ======================================================
 
@@ -117,13 +118,7 @@ basic_menu() {
 
 echo -e "${GREEN}[✓] Environment and enhancement setup completed.${RESET}"
 
-# =========================
-# End of enhancement additions
-# =========================
 
-
-
-#!/data/data/com.termux/files/usr/bin/bash
 
 # ========================================================
 # Pre-Setup for NCSPSB-Mobile: Auto Install + Permissions
@@ -146,8 +141,8 @@ fi
 
 # Auto install core Termux + system utilities if missing
 echo "[*] Checking & installing required base packages..."
-pkg update -y && pkg upgrade -y
-pkg install -y git curl wget proot tsu termux-tools termux-api
+safe_exec pkg update -y && safe_exec pkg upgrade -y
+safe_exec pkg install -y git curl wget proot tsu termux-tools termux-api
 
 # Optional: Extra utilities that may be required by system
 EXTRAS=(vim nano zsh tmux python nodejs net-tools openssh lsof htop neofetch unzip tar grep sed awk jq clang make coreutils)
@@ -155,23 +150,18 @@ EXTRAS=(vim nano zsh tmux python nodejs net-tools openssh lsof htop neofetch unz
 for pkg in "${EXTRAS[@]}"; do
   if ! command -v "$pkg" >/dev/null 2>&1; then
     echo "Installing missing package: $pkg"
-    pkg install -y "$pkg"
+    safe_exec pkg install -y "$pkg"
   fi
 done
 
 echo "[✓] Pre-setup complete. Launching main NCSPSB-Mobile script..."
 sleep 1
 
+
 # ====================================
 # Begin Original NCSPSB-Mobile Script
-# (everything from your provided code)
+# (everything from your provided 466+ lines below)
 # ====================================
-
-# INSERT YOUR ORIGINAL SCRIPT BELOW THIS LINE (unchanged)
-# You already shared the whole source so just keep it as is.
-
-
-#!/bin/bash
 
 # ======================
 # NCSPSB-Mobile Performance Dashboard
@@ -419,6 +409,7 @@ main_menu() {
     echo "[5] Run Full Performance Boost"
     echo "[6] Complete System Info"
     echo "[7] Live Status Panel (CPU, RAM, Net, Battery)"
+    echo "[8] Setup Shortcut Command (boost)"
     echo "[0] Exit"
     echo "=================================================="
     read -p "Choose option: " opt
@@ -439,4 +430,26 @@ main_menu() {
       5)
         full_performance_boost
         ;;
-      esac 
+      6)
+        complete_system_info
+        ;;
+      7)
+        live_status_panel
+        ;;
+      8)
+        setup
+        ;;
+      0)
+        echo "Exiting..."
+        exit 0
+        ;;
+      *)
+        echo "Invalid option."
+        sleep 1
+        ;;
+    esac
+  done
+}
+
+# Start the main menu
+main_menu
