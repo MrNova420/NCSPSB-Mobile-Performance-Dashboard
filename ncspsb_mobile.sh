@@ -1,3 +1,50 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# ========================================================
+# Pre-Setup for NCSPSB-Mobile: Auto Install + Permissions
+# ========================================================
+
+echo "[*] Initializing environment setup..."
+
+# Request storage permission (only once)
+if ! [ -d "$HOME/storage" ]; then
+  echo "[*] Requesting storage permissions..."
+  termux-setup-storage
+  sleep 2
+fi
+
+# Ensure bash is the shell (in case script launched in sh)
+if [ -z "$BASH_VERSION" ]; then
+  echo "Please run this script using bash: bash script.sh"
+  exit 1
+fi
+
+# Auto install core Termux + system utilities if missing
+echo "[*] Checking & installing required base packages..."
+pkg update -y && pkg upgrade -y
+pkg install -y git curl wget proot tsu termux-tools termux-api
+
+# Optional: Extra utilities that may be required by system
+EXTRAS=(vim nano zsh tmux python nodejs net-tools openssh lsof htop neofetch unzip tar grep sed awk jq clang make coreutils)
+
+for pkg in "${EXTRAS[@]}"; do
+  if ! command -v "$pkg" >/dev/null 2>&1; then
+    echo "Installing missing package: $pkg"
+    pkg install -y "$pkg"
+  fi
+done
+
+echo "[✓] Pre-setup complete. Launching main NCSPSB-Mobile script..."
+sleep 1
+
+# ====================================
+# Begin Original NCSPSB-Mobile Script
+# (everything from your provided code)
+# ====================================
+
+# INSERT YOUR ORIGINAL SCRIPT BELOW THIS LINE (unchanged)
+# You already shared the whole source so just keep it as is.
+
+
 #!/bin/bash
 
 # ======================
