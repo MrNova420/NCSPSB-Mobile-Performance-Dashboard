@@ -439,3 +439,4 @@ main_menu() {
       5)
         full_performance_boost
         ;;
+      esac 
