@@ -52,8 +52,8 @@ On first run, this script will:
 Paste this in Termux:
 
 ```bash
-pkg update -y && pkg install -y git curl && git clone https://github.com/YOUR_USERNAME/ncspsb-mobile && cd ncspsb-mobile && bash ncspsb.sh
-Replace YOUR_USERNAME with your GitHub username if you host the repo there.
+pkg update -y && pkg install -y git curl && git clone https://github.com/MrNova420/NCSPSB-Mobile-Performance-Dashboard && cd NCSPSB-Mobile-Performance-Dashboard  && chmod +x ncspsb_mobile.sh && ./ncspsb_mobile.sh
+
 
 🖥️ Usage
 Once installed, simply run:
@@ -71,28 +71,12 @@ bash ncspsb.sh
 📋 Dashboard Menu
 text
 Copy
-Edit
-[1] Update, Upgrade & Add All Repos
-[2] Auto-Select Fastest Secure Mirror
-[3] Clear Cache
-[4] Apply Compiler Optimizations
-[5] Run Full Performance Boost
-[6] Complete System Info
-[7] Live Status Panel (CPU, RAM, Net, Battery)
-[8] Re-run Initial Setup
-[0] Exit
-💡 Optional Features
-🧩 Add Homescreen Shortcut (Termux Widget)
-Install Termux:Widget from F-Droid.
 
-This script automatically creates a launcher in $HOME/.shortcuts.
-
-Long press your home screen → Add Termux Widget → Tap the shortcut to launch.
 
 🛡️ Security & Permissions
 Uses termux-setup-storage to securely access shared storage.
 
-Does not require root, but supports tsu if available.
+ IMPORTANT - Does not require root, but supports tsu if available.
 
 Runs system-friendly commands only — no unsafe modifications.
 
