@@ -1,5 +1,130 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
+# ======================================================
+# NCSPSB-Mobile Enhancements and Environment Setup Layer
+# ======================================================
+# This section adds:
+# - Environment detection (Termux, Andronix, UserLAnd, others)
+# - User prompt and warnings about root/proot/tsu usage with opt-out
+# - Checks for termux-api and prompts to install or fallback
+# - Detection of advanced UI tools (dialog, whiptail, fzf) and sets UI mode
+# - Lightweight CLI fallback UI for older/low-end devices
+# - Safe command execution wrapper to continue despite failures
+# - Variables and flags to enable/disable root features and UI modes
+#
+# This code is additive only. Your original 266 lines below remain
+# 100% unchanged and fully intact.
+# ======================================================
+
+# Color codes for messages
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+CYAN="\033[36m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
+echo -e "${CYAN}[i] Starting enhanced environment checks...${RESET}"
+
+# Environment Detection
+if [ -n "$PREFIX" ] && [[ "$PREFIX" == *"com.termux"* ]]; then
+  ENVIRONMENT="Termux"
+elif [ -f "/etc/andronix-release" ]; then
+  ENVIRONMENT="Andronix"
+elif [ -f "/etc/userland-release" ]; then
+  ENVIRONMENT="UserLAnd"
+else
+  ENVIRONMENT="Unknown/Other"
+fi
+
+echo "[i] Detected environment: $ENVIRONMENT"
+
+# Root tools usage prompt and opt-in
+echo -e "${YELLOW}[!] Warning: This script may use root-related tools like 'proot' and 'tsu'${RESET}"
+echo "Using these tools can affect system security and stability on some devices."
+read -p "Enable root-dependent features? (Y/n): " ROOT_FEATURES_CHOICE
+ROOT_FEATURES_CHOICE=${ROOT_FEATURES_CHOICE:-Y}
+
+if [[ "$ROOT_FEATURES_CHOICE" =~ ^[Yy]$ ]]; then
+  USE_ROOT=true
+  echo -e "${GREEN}[i] Root-dependent features ENABLED.${RESET}"
+else
+  USE_ROOT=false
+  echo -e "${YELLOW}[i] Root-dependent features DISABLED. Falling back to non-root modes where possible.${RESET}"
+fi
+
+# Check for termux-api availability
+if ! command -v termux-battery-status >/dev/null 2>&1; then
+  echo -e "${YELLOW}[!] termux-api package or app missing or non-functional.${RESET}"
+  read -p "Attempt to install termux-api package now? (Y/n): " INSTALL_TERMUX_API
+  INSTALL_TERMUX_API=${INSTALL_TERMUX_API:-Y}
+  if [[ "$INSTALL_TERMUX_API" =~ ^[Yy]$ ]]; then
+    pkg install -y termux-api || echo -e "${RED}[!] Failed to install termux-api. Some features may not work.${RESET}"
+  else
+    echo "[i] Continuing without termux-api. Battery and advanced features may be limited."
+  fi
+fi
+
+# UI Tools detection and fallback
+if command -v dialog >/dev/null 2>&1; then
+  UI_MODE="dialog"
+elif command -v whiptail >/dev/null 2>&1; then
+  UI_MODE="whiptail"
+elif command -v fzf >/dev/null 2>&1; then
+  UI_MODE="fzf"
+else
+  UI_MODE="basic"
+fi
+
+echo "[i] Selected UI mode: $UI_MODE"
+if [[ "$UI_MODE" == "basic" ]]; then
+  echo -e "${YELLOW}[!] No advanced UI tools (dialog/whiptail/fzf) detected. Using basic CLI menus.${RESET}"
+fi
+
+# Safe command execution wrapper: logs warnings but continues on failure
+safe_exec() {
+  local CMD="$*"
+  eval "$CMD"
+  local STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    echo -e "${YELLOW}[Warning] Command failed: $CMD${RESET}"
+    # Continue execution
+  fi
+  return $STATUS
+}
+
+# Example lightweight fallback menu function (optional usage)
+basic_menu() {
+  local PROMPT="$1"
+  shift
+  local OPTIONS=("$@")
+
+  echo "$PROMPT"
+  local i=1
+  for opt in "${OPTIONS[@]}"; do
+    echo "  $i) $opt"
+    ((i++))
+  done
+  echo -n "Select option: "
+  read -r choice
+  echo "$choice"
+}
+
+# Note:
+# To enable multi-fallback and safe execution in your original functions,
+# call 'safe_exec function_name' instead of 'function_name'.
+# To conditionally use root features, test $USE_ROOT in your code.
+
+echo -e "${GREEN}[✓] Environment and enhancement setup completed.${RESET}"
+
+# =========================
+# End of enhancement additions
+# =========================
+
+
+
+#!/data/data/com.termux/files/usr/bin/bash
+
 # ========================================================
 # Pre-Setup for NCSPSB-Mobile: Auto Install + Permissions
 # ========================================================
