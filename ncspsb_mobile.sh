@@ -1,380 +1,333 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ======================================================
-# NCSPSB-Mobile-Performance-Dashboard v3.0 (Full Merge)
+# NCSPSB-Mobile-Performance-Dashboard v2.0
 # Nova Control System Performance Status Board (Mobile Edition)
 # Author: MrNova420 | License: MIT | Status: Public Release
 # All-in-one performance dashboard and utility suite for Termux/Linux Android
 # ======================================================
 
-#############################
-# --- COLORS AND THEMES --- #
-#############################
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-CYAN="\033[36m"
-MAGENTA="\033[35m"
-BOLD="\033[1m"
-RESET="\033[0m"
-ULINE="\033[4m"
-
-######################
-# --- METADATA ---   #
-######################
+### METADATA & PROJECT INFO
 PROJECT_NAME="NCSPSB-Mobile"
-PROJECT_VERSION="3.0"
+PROJECT_VERSION="2.0"
 LOG_DIR="$HOME/.ncspsb-logs"
 LOG_FILE="$LOG_DIR/ncspsb.log"
 EXPORT_DIR="$HOME/.ncspsb-exports"
 REFRESH=3
-THEME="default"
-MENU_MODE="advanced"
+THEME="default" # Placeholder for future theme packs
+MENU_MODE="classic"
 WATCHDOG_ENABLED=true
-
-##############################
-# --- PACKAGES AND EXTRAS ---#
-##############################
-REQUIRED_PKGS=(dialog whiptail fzf termux-api coreutils grep awk sed bc curl jq nano null)
-EXTRAS=(vim zsh tmux python nodejs net-tools openssh lsof htop neofetch unzip tar clang make procps util-linux iproute2 python-pip dnsutils inetutils ncdu)
-
+REQUIRED_PKGS=(dialog termux-api coreutils grep awk sed bc fzf curl jq)
 declare -A PANEL_FUNCS
 
-###########################
-# --- ENV DETECTION ---   #
-###########################
-echo -e "${CYAN}[i] Starting enhanced environment checks...${RESET}"
+### COLOR THEMES (Easy to expand in future)
+RED='\e[31m'
+GRN='\e[32m'
+YEL='\e[33m'
+BLU='\e[34m'
+RST='\e[0m'
 
-if [ -n "$PREFIX" ] && [[ "$PREFIX" == *"com.termux"* ]]; then
-  ENVIRONMENT="Termux"
-elif [ -f "/etc/andronix-release" ]; then
-  ENVIRONMENT="Andronix"
-elif [ -f "/etc/userland-release" ]; then
-  ENVIRONMENT="UserLAnd"
-else
-  ENVIRONMENT="Unknown/Other"
-fi
-echo -e "${MAGENTA}[i] Detected environment: $ENVIRONMENT${RESET}"
-
-echo -e "${YELLOW}[!] This script may use root-related tools like 'proot' and 'tsu'${RESET}"
-echo "Using these tools can affect system security and stability on some devices."
-read -p "Enable root-dependent features? (Y/n): " ROOT_FEATURES_CHOICE
-ROOT_FEATURES_CHOICE=${ROOT_FEATURES_CHOICE:-Y}
-if [[ "$ROOT_FEATURES_CHOICE" =~ ^[Yy]$ ]]; then
-  USE_ROOT=true
-  echo -e "${GREEN}[i] Root-dependent features ENABLED.${RESET}"
-else
-  USE_ROOT=false
-  echo -e "${YELLOW}[i] Root-dependent features DISABLED. Falling back to non-root modes where possible.${RESET}"
-fi
-
-if ! command -v termux-battery-status >/dev/null 2>&1; then
-  echo -e "${YELLOW}[!] termux-api package or app missing or non-functional.${RESET}"
-  read -p "Attempt to install termux-api package now? (Y/n): " INSTALL_TERMUX_API
-  INSTALL_TERMUX_API=${INSTALL_TERMUX_API:-Y}
-  if [[ "$INSTALL_TERMUX_API" =~ ^[Yy]$ ]]; then
-    pkg install -y termux-api || echo -e "${RED}[!] Failed to install termux-api. Some features may not work.${RESET}"
-  else
-    echo "[i] Continuing without termux-api. Battery and advanced features may be limited."
-  fi
-fi
-
-if command -v dialog >/dev/null 2>&1; then
-  UI_MODE="dialog"
-elif command -v whiptail >/dev/null 2>&1; then
-  UI_MODE="whiptail"
-elif command -v fzf >/dev/null 2>&1; then
-  UI_MODE="fzf"
-else
-  UI_MODE="basic"
-fi
-echo -e "${MAGENTA}[i] Selected UI mode: $UI_MODE${RESET}"
-if [[ "$UI_MODE" == "basic" ]]; then
-  echo -e "${YELLOW}[!] No advanced UI tools (dialog/whiptail/fzf) detected. Using basic CLI menus.${RESET}"
-fi
-
-#############################
-# --- SAFE EXEC WRAPPER --- #
-#############################
-safe_exec() {
-  local CMD="$*"
-  eval "$CMD"
-  local STATUS=$?
-  if [[ $STATUS -ne 0 ]]; then
-    echo -e "${YELLOW}[Warning] Command failed: $CMD${RESET}"
-  fi
-  return $STATUS
-}
-
-#############################
-# --- LOGGING/NOTIFY ---    #
-#############################
+### LOGGING SYSTEM (Safer, more robust)
 log() {
     mkdir -p "$LOG_DIR"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
 }
+
+### NOTIFICATION SYSTEM (Clearer warnings)
 notify() {
     if command -v termux-notification &>/dev/null; then
         termux-notification --title "$PROJECT_NAME" --content "$*" --priority high
     else
-        echo -e "${YELLOW}[NOTIFY]${RESET} $*"
+        echo -e "${YEL}[NOTIFY]${RST} $*"
     fi
 }
+
 warn() {
-    echo -e "${RED}[WARNING]${RESET} $*"
+    echo -e "${RED}[WARNING]${RST} $*"
     notify "WARNING: $*"
 }
+
+### ENVIRONMENT & DEPENDENCIES
 check_permissions() {
     termux-setup-storage &>/dev/null || warn "Termux storage permission not granted."
 }
 
-##############################
-# --- AUTO INSTALL ---       #
-##############################
+check_env() {
+    log "Detecting environment..."
+    if [[ $(whoami) == "root" ]]; then
+        ENVIRONMENT="Rooted"
+    elif [[ -d /data/data/com.termux ]]; then
+        ENVIRONMENT="Termux"
+    elif grep -q "ubuntu" /etc/os-release 2>/dev/null; then
+        ENVIRONMENT="Ubuntu"
+    else
+        ENVIRONMENT="Unknown"
+    fi
+    log "Environment: $ENVIRONMENT"
+}
+
 auto_install() {
-    echo -e "${CYAN}[*] Checking & installing required base packages...${RESET}"
-    safe_exec pkg update -y && safe_exec pkg upgrade -y
-    for pkg in "${REQUIRED_PKGS[@]}" "${EXTRAS[@]}"; do
-      if ! command -v "$pkg" >/dev/null 2>&1; then
-        echo "Installing missing package: $pkg"
-        safe_exec pkg install -y "$pkg"
-      fi
+    for pkg in "${REQUIRED_PKGS[@]}"; do
+        if ! command -v "$pkg" &>/dev/null; then
+            log "Installing missing dependency: $pkg"
+            pkg install -y "$pkg" 2>/dev/null || apt update && apt install -y "$pkg"
+            if ! command -v "$pkg" &>/dev/null; then
+                warn "Failed to install $pkg. Please install manually."
+            fi
+        fi
     done
-    echo -e "${GREEN}[✓] All packages present.${RESET}"
 }
 
-##############################
-# --- SHORTCUT SETUP ---     #
-##############################
-EXPECTED_PATH="$PREFIX/bin/boost"
-setup_shortcut() {
-  echo -e "${CYAN}Starting auto-install and setup...${RESET}"
-  auto_install
-  if [[ ! -f "$EXPECTED_PATH" ]]; then
-    echo -e "${CYAN}Installing shortcut command to $EXPECTED_PATH...${RESET}"
-    mkdir -p "$(dirname "$EXPECTED_PATH")"
-    cp "${BASH_SOURCE[0]}" "$EXPECTED_PATH"
-    chmod +x "$EXPECTED_PATH"
-    echo -e "${GREEN}Shortcut installed! You can now run this script by typing 'boost'${RESET}"
-  else
-    echo -e "${GREEN}Shortcut already installed at $EXPECTED_PATH${RESET}"
-  fi
-  echo -e "${CYAN}Setup complete!${RESET}"
-  read -p "Press Enter to start the dashboard..."
-  exec "$EXPECTED_PATH"
-}
+### BACKGROUND WATCHDOG IMPLEMENTATION
+WATCHDOG_PID_FILE="$LOG_DIR/watchdog.pid"
 
-##############################
-# --- MIRROR SELECTION ---   #
-##############################
-auto_select_fastest_mirror() {
-  echo -e "${CYAN}Selecting fastest Termux mirror...${RESET}"
-  local mirrors=(
-    "https://packages-cf.termux.dev/apt/termux-main"
-    "https://mirror.quantum5.ca/termux/termux-main"
-    "https://grimler.se/termux-packages-24/"
-  )
-  local fastest_mirror=""
-  local fastest_time=1000000
-  for mirror in "${mirrors[@]}"; do
-    local start=$(date +%s%N)
-    curl -s --connect-timeout 3 --max-time 5 -o /dev/null "$mirror/InRelease"
-    local end=$(date +%s%N)
-    local diff=$(( (end - start)/1000000 ))
-    echo "Mirror $mirror responded in ${diff} ms."
-    if (( diff < fastest_time )); then
-      fastest_time=$diff
-      fastest_mirror=$mirror
+start_watchdog() {
+    if [[ -f "$WATCHDOG_PID_FILE" ]] && kill -0 $(cat "$WATCHDOG_PID_FILE") 2>/dev/null; then
+        warn "Watchdog already running (PID $(cat $WATCHDOG_PID_FILE))"
+        return
     fi
-  done
-  echo -e "${GREEN}Fastest mirror is: $fastest_mirror (Response: ${fastest_time} ms)${RESET}"
-  read -p "Press Enter to continue..."
+    (
+        while true; do
+            # Battery
+            if command -v jq &>/dev/null; then
+                BAT=$(termux-battery-status | jq '.percentage' 2>/dev/null)
+                [[ -z "$BAT" || "$BAT" == "null" ]] && BAT=-1
+            else
+                BAT=$(termux-battery-status | grep percentage | awk '{print $2}' | tr -d ',')
+                [[ -z "$BAT" ]] && BAT=-1
+            fi
+            # CPU Temp
+            CPU_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
+            CPU_TEMP_C=$((CPU_TEMP/1000))
+            [[ -z "$CPU_TEMP_C" || "$CPU_TEMP_C" == "0" ]] && CPU_TEMP_C=0
+
+            if [[ "$BAT" -ge 0 && "$BAT" -lt 15 ]]; then
+                log "Watchdog: Low Battery $BAT%"
+                notify "Watchdog: Low Battery $BAT%"
+            fi
+            if [[ "$CPU_TEMP_C" -gt 70 ]]; then
+                log "Watchdog: High CPU Temp $CPU_TEMP_C°C"
+                notify "Watchdog: High CPU Temp $CPU_TEMP_C°C"
+            fi
+            sleep 60 # Check every 60 seconds
+        done
+    ) &
+    echo $! > "$WATCHDOG_PID_FILE"
+    log "Started Watchdog (PID $!)"
+    notify "Watchdog started (PID $!)"
 }
 
-##############################
-# --- CACHE CLEAR ---        #
-##############################
-clear_cache() {
-  echo -e "${CYAN}Clearing Termux package cache...${RESET}"
-  rm -rf "$PREFIX/var/cache/apt/"* "$PREFIX/var/lib/apt/lists/"*
-  echo -e "${GREEN}Cache cleared.${RESET}"
-  read -p "Press Enter to continue..."
-}
-
-##############################
-# --- COMPILER OPTIMIZE ---  #
-##############################
-apply_compiler_optimizations() {
-  echo -e "${CYAN}Applying compiler optimization flags...${RESET}"
-  export CFLAGS="-O3 -march=native -pipe"
-  export CXXFLAGS="$CFLAGS"
-  echo -e "${GREEN}Compiler flags applied: CFLAGS=${CFLAGS}${RESET}"
-  read -p "Press Enter to continue..."
-}
-
-##############################
-# --- PERF BOOST ---         #
-##############################
-full_performance_boost() {
-  echo -e "${CYAN}Performing full performance boost...${RESET}"
-  pkg autoclean -y
-  pkg clean -y
-  clear_cache
-  apply_compiler_optimizations
-  echo -e "${GREEN}Performance boost complete.${RESET}"
-  read -p "Press Enter to continue..."
-}
-
-##############################
-# --- SYSTEM INFO PANEL ---  #
-##############################
-complete_system_info() {
-  clear
-  echo -e "${BOLD}${CYAN}=== Complete System Info ===${RESET}"
-  echo -e "${YELLOW}Kernel and OS Info:${RESET}"
-  uname -a
-  echo ""
-  echo -e "${YELLOW}Disk Usage:${RESET}"
-  df -h
-  echo ""
-  echo -e "${YELLOW}Memory Info:${RESET}"
-  free -h
-  echo ""
-  echo -e "${YELLOW}CPU Info:${RESET}"
-  lscpu 2>/dev/null || echo "lscpu not available"
-  echo ""
-  echo -e "${YELLOW}Installed Packages Count:${RESET}"
-  dpkg-query -l | wc -l
-  echo ""
-  read -p "Press Enter to return to menu..."
-}
-
-##############################
-# --- NETWORK INTERFACE ---  #
-##############################
-get_network_interfaces() {
-  WIFI_IFACE=$(ip -o link show 2>/dev/null | awk -F': ' '{print $2}' | grep -E '^wlan0|^wlan' | head -n1)
-  DATA_IFACE=$(ip -o link show 2>/dev/null | awk -F': ' '{print $2}' | grep -E '^rmnet|^usb' | head -n1)
-}
-
-##############################
-# --- NETWORK SPEED ---      #
-##############################
-human_readable_bytes() {
-  local b=${1:-0}
-  local d=''
-  local s=0
-  local S=(Bytes KB MB GB TB PB)
-  while ((b > 1024)); do
-    d=$(printf ".%02d" $((b % 1024 * 100 / 1024)))
-    b=$((b / 1024))
-    ((s++))
-  done
-  echo "$b$d ${S[$s]}"
-}
-calc_net_speed() {
-  local iface=$1
-  if [[ -z "$iface" ]]; then
-    RX_SPEED=0
-    TX_SPEED=0
-    return
-  fi
-  RX1=$(cat /sys/class/net/$iface/statistics/rx_bytes 2>/dev/null || echo 0)
-  TX1=$(cat /sys/class/net/$iface/statistics/tx_bytes 2>/dev/null || echo 0)
-  sleep 5
-  RX2=$(cat /sys/class/net/$iface/statistics/rx_bytes 2>/dev/null || echo 0)
-  TX2=$(cat /sys/class/net/$iface/statistics/tx_bytes 2>/dev/null || echo 0)
-  RX_SPEED=$((RX2 - RX1))
-  TX_SPEED=$((TX2 - TX1))
-}
-
-##############################
-# --- LIVE STATUS PANEL ---  #
-##############################
-live_status_panel_full() {
-  clear
-  echo -e "${BOLD}${CYAN}====== NCSPSB-Mobile Live Status Panel ======${RESET}"
-  echo -e "${YELLOW}Press 'q' then Enter anytime to quit panel.${RESET}"
-  while true; do
-    get_network_interfaces
-    CPU_USAGE=$(top -bn1 | grep "CPU" | awk '{print $2 " " $3}' || echo "N/A")
-    RAM_USED=$(free -h | awk '/Mem:/ {print $3}' || echo "N/A")
-    RAM_TOTAL=$(free -h | awk '/Mem:/ {print $2}' || echo "N/A")
-    DISK_USE=$(df -h / | awk 'NR==2 {print $3 " / " $2 " (" $5 ")"}' || echo "N/A")
-    calc_net_speed $WIFI_IFACE
-    WIFI_RX_HR=$(human_readable_bytes $RX_SPEED)
-    WIFI_TX_HR=$(human_readable_bytes $TX_SPEED)
-    calc_net_speed $DATA_IFACE
-    DATA_RX_HR=$(human_readable_bytes $RX_SPEED)
-    DATA_TX_HR=$(human_readable_bytes $TX_SPEED)
-    BATTERY_JSON=$(termux-battery-status 2>/dev/null)
-    BATTERY_PERC=$(echo "$BATTERY_JSON" | jq '.percentage' 2>/dev/null || echo "N/A")
-    BATTERY_TEMP=$(echo "$BATTERY_JSON" | jq '.temperature' 2>/dev/null || echo "N/A")
-    clear
-    echo -e "${BOLD}${CYAN}====== NCSPSB-Mobile Live Status Panel ======${RESET}"
-    echo -e "${GREEN}Hostname:${RESET} $(hostname)"
-    echo -e "${GREEN}Uptime:${RESET} $(uptime -p)"
-    echo -e "${GREEN}CPU Usage:${RESET} $CPU_USAGE"
-    echo -e "${GREEN}RAM Usage:${RESET} $RAM_USED / $RAM_TOTAL"
-    echo -e "${GREEN}Disk Usage:${RESET} $DISK_USE"
-    echo -e "${GREEN}Wi-Fi (${WIFI_IFACE:-N/A}):${RESET} Download $WIFI_RX_HR/s | Upload $WIFI_TX_HR/s"
-    echo -e "${GREEN}Mobile Data (${DATA_IFACE:-N/A}):${RESET} Download $DATA_RX_HR/s | Upload $DATA_TX_HR/s"
-    echo -e "${GREEN}Battery:${RESET} $BATTERY_PERC%    ${GREEN}Temperature:${RESET} $BATTERY_TEMP °C"
-    echo -e "${YELLOW}Press 'q' then Enter to return to menu.${RESET}"
-    read -t 5 -n 1 key
-    if [[ "$key" == "q" ]]; then
-      break
+stop_watchdog() {
+    if [[ -f "$WATCHDOG_PID_FILE" ]] && kill -0 $(cat "$WATCHDOG_PID_FILE") 2>/dev/null; then
+        kill $(cat "$WATCHDOG_PID_FILE")
+        log "Stopped Watchdog (PID $(cat "$WATCHDOG_PID_FILE"))"
+        notify "Watchdog stopped"
+        rm -f "$WATCHDOG_PID_FILE"
+    else
+        warn "Watchdog not running"
     fi
-  done
 }
 
-##############################
-# --- MAIN MENU ---          #
-##############################
-show_menu() {
-    local panels=("System Info" "Network" "Sensors" "Boost" "Alerts" "Logs" "Export" "Live Status (Simple)" "Live Status Panel (Full)" "Complete System Info" "Auto-Select Mirror" "Clear Cache" "Compiler Optimizations" "Full Performance Boost" "Setup Shortcut" "Settings" "Exit")
+show_watchdog_status() {
+    if [[ -f "$WATCHDOG_PID_FILE" ]] && kill -0 $(cat "$WATCHDOG_PID_FILE") 2>/dev/null; then
+        echo -e "${GRN}Watchdog running (PID $(cat $WATCHDOG_PID_FILE))${RST}"
+    else
+        echo -e "${RED}Watchdog not running${RST}"
+    fi
+}
+
+### PANEL: SYSTEM INFO (Cleaner memory logic)
+system_info() {
+    echo -e "${BLU}-- SYSTEM INFO --${RST}"
+    echo "Device: $(getprop ro.product.model 2>/dev/null)"
+    echo "Android: $(getprop ro.build.version.release 2>/dev/null)"
+    echo "Kernel: $(uname -r)"
+    echo "Uptime: $(uptime -p)"
+    echo "CPU: $(grep 'model name' /proc/cpuinfo | head -1 | cut -d: -f2)"
+    echo "Cores: $(grep -c ^processor /proc/cpuinfo)"
+    mem_total=$(free -h | grep Mem | awk '{print $2}')
+    mem_used=$(free -h | grep Mem | awk '{print $3}')
+    echo "RAM: ${mem_used}/${mem_total}"
+    # Battery
+    if command -v jq &>/dev/null; then
+        bat=$(termux-battery-status | jq '.percentage' 2>/dev/null)
+        [[ -z "$bat" || "$bat" == "null" ]] && bat="N/A"
+    else
+        bat=$(termux-battery-status | grep percentage | awk '{print $2}' | tr -d ',')
+        [[ -z "$bat" ]] && bat="N/A"
+    fi
+    echo "Battery: ${bat}%"
+    echo "Disk: $(df -h $HOME | tail -1 | awk '{print $4}') free"
+}
+PANEL_FUNCS["System Info"]=system_info
+
+### PANEL: NETWORK INFO (Better SSID fallback)
+network_panel() {
+    echo -e "${BLU}-- NETWORK INFO --${RST}"
+    if command -v jq &>/dev/null; then
+        ssid=$(termux-wifi-connectioninfo | jq -r '.ssid' 2>/dev/null)
+        [[ -z "$ssid" || "$ssid" == "null" ]] && ssid="N/A"
+    else
+        ssid=$(termux-wifi-connectioninfo | grep ssid | awk '{print $2}')
+        [[ -z "$ssid" ]] && ssid="N/A"
+    fi
+    echo "WiFi SSID: ${ssid}"
+    ip=$(ip addr show wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}')
+    [[ -z "$ip" ]] && ip=$(ip addr show 2>/dev/null | grep 'inet ' | head -1 | awk '{print $2}')
+    [[ -z "$ip" ]] && ip="N/A"
+    echo "IP Address: ${ip}"
+    ping_time=$(ping -c 1 google.com 2>/dev/null | grep 'time=' | awk -F'time=' '{print $2}' | cut -d' ' -f1)
+    [[ -z "$ping_time" ]] && ping_time="N/A"
+    echo "Ping: ${ping_time} ms"
+}
+PANEL_FUNCS["Network"]=network_panel
+
+### PANEL: PERFORMANCE BOOST (Logs & smarter root detection)
+boost_panel() {
+    echo -e "${GRN}-- PERFORMANCE BOOST --${RST}"
+    echo "1. Clear RAM Cache (root only)"
+    echo "2. Kill Background Processes (DANGEROUS!)"
+    echo "3. Return"
+    read -p "Select option: " opt
+    case $opt in
+        1)
+            if [[ $ENVIRONMENT == "Rooted" ]]; then
+                sync; echo 3 > /proc/sys/vm/drop_caches
+                log "RAM Cache cleared"
+            else
+                warn "RAM Cache clear requires root!"
+            fi
+            ;;
+        2)
+            warn "This will kill all your user background processes and may close Termux itself."
+            read -p "Type 'YES' to proceed: " confirm
+            if [[ "$confirm" == "YES" ]]; then
+                killall -u $(whoami)
+                log "Background user processes killed"
+            else
+                echo "Operation cancelled."
+            fi
+            ;;
+        *)
+            return
+            ;;
+    esac
+}
+PANEL_FUNCS["Boost"]=boost_panel
+
+### PANEL: ALERTS (Clearer outputs, fallback)
+alerts_panel() {
+    echo -e "${RED}-- ALERTS --${RST}"
+    # Battery
+    if command -v jq &>/dev/null; then
+        BAT=$(termux-battery-status | jq '.percentage' 2>/dev/null)
+        [[ -z "$BAT" || "$BAT" == "null" ]] && BAT=-1
+    else
+        BAT=$(termux-battery-status | grep percentage | awk '{print $2}' | tr -d ',')
+        [[ -z "$BAT" ]] && BAT=-1
+    fi
+    CPU_TEMP=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null)
+    CPU_TEMP_C=$((CPU_TEMP/1000))
+    [[ -z "$CPU_TEMP_C" || "$CPU_TEMP_C" == "0" ]] && CPU_TEMP_C=0
+    [[ "$BAT" -ge 0 && "$BAT" -lt 15 ]] && warn "Low Battery: $BAT%"
+    [[ "$CPU_TEMP_C" -gt 70 ]] && warn "High CPU Temp: $CPU_TEMP_C°C"
+}
+PANEL_FUNCS["Alerts"]=alerts_panel
+
+### PANEL: SENSORS (Failure mode fallback)
+sensors_panel() {
+    echo -e "${BLU}-- SENSORS --${RST}"
+    if termux-sensor -l &>/dev/null; then
+        termux-sensor -l
+        echo "Live Reading:"
+        termux-sensor -n 1
+    else
+        warn "Sensors not available or permission not granted."
+    fi
+}
+PANEL_FUNCS["Sensors"]=sensors_panel
+
+### PANEL: EXPORT (Timestamp naming, logs)
+export_panel() {
+    mkdir -p "$EXPORT_DIR"
+    TS=$(date '+%Y%m%d_%H%M%S')
+    FILE="$EXPORT_DIR/system_report_$TS.txt"
+    {
+        system_info
+        network_panel
+        alerts_panel
+    } > "$FILE"
+    log "System exported to $FILE"
+    echo "Report saved: $FILE"
+}
+PANEL_FUNCS["Export"]=export_panel
+
+### PANEL: LOGS
+logs_panel() {
+    echo -e "${YEL}-- LOGS --${RST}"
+    tail -n 20 "$LOG_FILE" 2>/dev/null || echo "No logs yet."
+}
+PANEL_FUNCS["Logs"]=logs_panel
+
+### PANEL: SETTINGS (Now includes watchdog controls)
+settings_panel() {
+    echo -e "${YEL}-- SETTINGS --${RST}"
+    show_watchdog_status
+    echo "1. Refresh rate (Current: $REFRESH sec)"
+    echo "2. Toggle Watchdog (Current: $WATCHDOG_ENABLED)"
+    echo "3. Theme (Current: $THEME)"
+    echo "4. Start Watchdog (background monitor)"
+    echo "5. Stop Watchdog"
+    echo "6. Back"
+    read -p "Select option: " opt
+    case $opt in
+        1) read -p "Set refresh (sec): " r; REFRESH=${r:-3};;
+        2) WATCHDOG_ENABLED=$( [[ $WATCHDOG_ENABLED == true ]] && echo false || echo true );;
+        3) read -p "Set theme: " t; THEME=${t:-default};;
+        4) start_watchdog;;
+        5) stop_watchdog;;
+        *) return;;
+    esac
+}
+PANEL_FUNCS["Settings"]=settings_panel
+
+### PANEL: LIVE STATUS (Stable)
+live_status_panel() {
     while true; do
         clear
-        echo -e "${BOLD}${MAGENTA}=================================================="
-        echo -e "${ULINE}${CYAN}${PROJECT_NAME} ${PROJECT_VERSION} | Performance Dashboard${RESET}"
-        echo -e "${BOLD}${CYAN}Environment:${RESET} $ENVIRONMENT   ${BOLD}${CYAN}UI Mode:${RESET} $UI_MODE"
-        echo -e "${BOLD}${CYAN}Root Features:${RESET} $USE_ROOT   ${BOLD}${CYAN}Theme:${RESET} $THEME"
-        echo -e "${BOLD}${CYAN}Log File:${RESET} $LOG_FILE"
-        echo -e "${MAGENTA}--------------------------------------------------${RESET}"
+        system_info
+        echo
+        alerts_panel
+        echo
+        echo "(Updating every $REFRESH seconds, press Ctrl+C to exit)"
+        sleep $REFRESH
+    done
+}
+PANEL_FUNCS["Live Status"]=live_status_panel
+
+### MAIN MENU SYSTEM (Cleaner handler)
+show_menu() {
+    local panels=("System Info" "Network" "Sensors" "Boost" "Alerts" "Logs" "Export" "Live Status" "Settings" "Exit")
+    while true; do
+        clear
+        echo -e "${GRN}===== $PROJECT_NAME v${PROJECT_VERSION} =====${RST}"
         for i in "${!panels[@]}"; do
-            printf "${YELLOW}[%d]${RESET} %s\n" $((i+1)) "${panels[$i]}"
+            echo "$((i+1)). ${panels[$i]}"
         done
-        echo -e "${MAGENTA}==================================================${RESET}"
         read -p "Choose option: " choice
         panel_name="${panels[$((choice-1))]}"
-        case "$panel_name" in
-          "System Info") system_info;;
-          "Network") network_panel;;
-          "Sensors") sensors_panel;;
-          "Boost") boost_panel;;
-          "Alerts") alerts_panel;;
-          "Logs") logs_panel;;
-          "Export") export_panel;;
-          "Live Status (Simple)") live_status_panel;;
-          "Live Status Panel (Full)") live_status_panel_full;;
-          "Complete System Info") complete_system_info;;
-          "Auto-Select Mirror") auto_select_fastest_mirror;;
-          "Clear Cache") clear_cache;;
-          "Compiler Optimizations") apply_compiler_optimizations;;
-          "Full Performance Boost") full_performance_boost;;
-          "Setup Shortcut") setup_shortcut;;
-          "Settings") settings_panel;;
-          "Exit") log "User exited dashboard."; exit 0;;
-          *) echo "Invalid option.";;
-        esac
-        echo -e "\n${CYAN}Press Enter to return to menu...${RESET}"
-        read
+        [[ "$panel_name" == "Exit" ]] && break
+        if [[ -n "${PANEL_FUNCS[$panel_name]}" ]]; then
+            clear
+            ${PANEL_FUNCS[$panel_name]}
+            echo -e "\nPress Enter to return..."
+            read
+        fi
     done
 }
 
-##############################
-# --- MAIN ENTRYPOINT ---    #
-##############################
+### MAIN ENTRYPOINT (Packaging ready)
 main() {
+    check_env
     auto_install
     check_permissions
     show_menu
@@ -382,5 +335,4 @@ main() {
 }
 
 main
-
 # End of Script
