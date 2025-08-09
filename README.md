@@ -1,5 +1,5 @@
 # NCSPSB-Mobile Performance Dashboard (Ultimate Combined Edition)
-
+Beta
 ---
 
 ## Overview
@@ -7,7 +7,7 @@
 **NCSPSB-Mobile** is a fully-featured, all-in-one performance monitoring and utility dashboard designed for Android devices running **Termux**. It provides detailed system info, live device health stats, network info, sensor data, alerts, performance optimizations, and update management—all accessible from a clean terminal-based menu.
 
 This unified script merges multiple versions and feature sets into a single stable, optimized, and user-friendly tool designed to give you full control and insight over your Android system’s performance and environment.
-
+ # designed as a future side feature / panel for another project.
 ---
 
 ## Features
