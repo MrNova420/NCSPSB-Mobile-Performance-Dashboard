@@ -1,103 +1,137 @@
-# NCSPSB-Mobile-Performance-Dashboard
+NCSPSB-Mobile Performance Dashboard (Ultimate Combined Edition)
+Overview
+NCSPSB-Mobile is a fully-featured, all-in-one performance monitoring and utility dashboard designed for Android devices running Termux. It provides detailed system info, live device health stats, network info, sensor data, alerts, performance optimizations, and update management—all accessible from a clean terminal-based menu.
 
-in beta - currently working on stable version relase Soon mostly stable already tho. 
-will keep this a seperate repo but this is just a small feature for a bigger project that will later on be released and have tis merged as a side feature!
+This unified script merges multiple versions and feature sets into a single stable, optimized, and user-friendly tool designed to give you full control and insight over your Android system’s performance and environment.
 
-# 🚀 NCSPSB-Mobile Performance Dashboard
+Features
+Environment Detection: Auto-detects Termux, Andronix, UserLAnd, or other Linux-like environments on Android.
 
-A powerful, interactive, and fully automated Termux-based performance dashboard for Android devices. **NCSPSB-Mobile** (Nova Custom System Performance Status Boost-Mobile) is your all-in-one solution to monitor, boost, and maintain the performance of your device directly from the terminal.
+Root Usage Optional: Safely enables root-dependent features like kernel tweaks if you choose.
 
----
+Live Health Overview: Displays CPU, RAM, Disk usage, battery stats, temperature warnings, and alerts.
 
-## 📦 Features
+Network Info Panel: Shows local and public IPs, Wi-Fi details, MAC, DNS, gateway, and approximate speed.
 
-- 🔄 **Auto Update, Upgrade, and Setup**
-- 🚀 **System Optimizations & Boost Tools**
-- 🧰 **Auto-Install All Required Dependencies**
-- 🧠 **Fast Mirror Auto-Selector**
-- 🧹 **Cache Cleaning & Compiler Optimizations**
-- 📊 **Live Status Panel (CPU, RAM, Disk, Network, Battery, Temp)**
-- 🖥️ **Complete System Info Snapshot**
-- ⚙️ **Safe Error Handling and User Feedback**
-- 📁 **Auto-Termux Storage Access & Authorizations**
-- 🏃‍♂️ **Shortcut Command Installer (`boost`)**
-- 🔧 **Optional Homescreen Launcher Support (via Termux Widget)**
+Device Info Panel: Hardware model, Android version, CPU specs, RAM, disk, battery status, uptime, and root state.
 
----
+Environment Info: Termux version, shell, installed packages, API status, Python & NodeJS versions, tmux sessions.
 
-## 🔧 Auto-Setup
+Sensors Panel: Lists available sensors with current readings (light, accelerometer, gyroscope).
 
-On first run, this script will:
-1. Request storage permissions (if not yet granted)
-2. Auto-install all essential & optional Termux packages
-3. Set up a command-line shortcut (`boost`)
-4. Launch the dashboard immediately
+Alerts & Notifications: Live alerts for high RAM/disk usage, battery or CPU temperature, low battery, etc.
 
-> **No manual configuration needed. Just run it and go.**
+Performance Boost: Applies safe compiler flags and system tweaks to optimize performance.
 
----
+Update Manager: Pulls latest updates if installed from a git repo.
 
-## 🛠 Requirements
+Settings & Customization: (Basic placeholders for theme, auto-refresh, panel toggles)
 
-- ✅ Android 7.0+
-- ✅ [Termux](https://f-droid.org/en/packages/com.termux/) (from F-Droid only)
-- ✅ Basic shell access (`bash`, `proot`, `tsu` if rooted)
-- ✅ Internet access for installing packages
+Help & About: Information about the project, author, and usage links.
 
----
+Prerequisites
+Android device with Termux installed from F-Droid or official source.
 
-## 📥 Installation
+Basic familiarity with terminal commands.
 
-### 🌀 Automatic One-Liner (Recommended)
-Paste this in Termux:
+Optional root access for advanced tweaks (if enabled).
 
-```bash
-pkg update -y && pkg install -y git curl && git clone https://github.com/MrNova420/NCSPSB-Mobile-Performance-Dashboard && cd NCSPSB-Mobile-Performance-Dashboard  && chmod +x ncspsb_mobile.sh && ./ncspsb_mobile.sh
+Termux API app installed for battery and sensor features (termux-api package).
 
+Installation & Setup
+1. Install Termux and Termux API
+Install Termux from F-Droid (recommended)
 
-🖥️ Usage
-Once installed, simply run:
+Open Termux and run:
 
 bash
 Copy
 Edit
-boost
-Or run the script manually:
+pkg update && pkg upgrade -y
+pkg install termux-api git curl jq dialog whiptail fzf -y
+Install Termux:API app from F-Droid to enable sensor and battery features.
+
+2. Download the NCSPSB-Mobile Script
+bash
+Copy
+Edit
+cd ~
+git clone https://github.com/MrNova420/NCSPSB-Mobile-Performance-Dashboard.git
+cd NCSPSB-Mobile-Performance-Dashboard
+chmod +x ncspsb-mobile.sh
+Alternatively, copy the entire script into a file named ncspsb-mobile.sh.
+
+3. Run the Dashboard
+bash
+Copy
+Edit
+./ncspsb-mobile.sh
+Usage Guide
+After launching, you will be prompted for root feature enablement.
+
+The main menu displays options from live health overview to performance tweaks.
+
+Navigate menus by entering numbers and following on-screen instructions.
+
+Use q in live panels to exit back to the menu.
+
+Alerts will display any critical warnings about your system.
+
+Performance boost applies safe tweaks, optionally with root.
+
+Update manager syncs the script with the latest git repo changes.
+
+Settings panel has basic placeholders for future customization.
+
+Quick Start Copy-Paste Commands
+bash
+Copy
+Edit
+# Update packages and install dependencies
+pkg update && pkg upgrade -y
+pkg install termux-api git curl jq dialog whiptail fzf -y
+
+# Download script from GitHub (or use your saved script)
+git clone https://github.com/MrNova420/NCSPSB-Mobile-Performance-Dashboard.git
+cd NCSPSB-Mobile-Performance-Dashboard
+
+# Make script executable
+chmod +x ncspsb-mobile.sh
+
+# Run the dashboard
+./ncspsb-mobile.sh
+Tips
+For root features, allow root access when prompted; otherwise, features requiring root will be skipped safely.
+
+To enable storage access, grant Termux storage permissions by running:
 
 bash
 Copy
 Edit
-bash ncspsb.sh
-📋 Dashboard Menu
-text
-Copy
+termux-setup-storage
+Keep your Termux environment updated to ensure compatibility.
 
+The script auto-detects the best UI tools installed (dialog, whiptail, fzf) for enhanced menus.
 
-🛡️ Security & Permissions
-Uses termux-setup-storage to securely access shared storage.
+Use Ctrl+C to abort any running process or command.
 
- IMPORTANT - Does not require root, but supports tsu if available.
+Explore all panels to get full system insight and optimize performance.
 
-Runs system-friendly commands only — no unsafe modifications.
+Troubleshooting
+Termux API errors: Ensure the Termux:API app is installed and the termux-api package is present.
 
-📚 Credits
-Developed by: Mr Nova (@MrNova420)
+Missing dependencies: Run the install commands above again.
 
-Script Engineered for: Personal projects & community personal device performance montoring/boost needs
+Root not working: Confirm your device is rooted and you have granted Termux root permissions.
 
+Network info not showing: Verify you have active internet connections or Wi-Fi.
 
-📃 License
-This project is open-source and free to use under the MIT License.
+Contribution & Support
+This project is open source and available on GitHub:
 
-🙌 Support & Contributions
-Found a bug or want to contribute?
-Open an issue or submit a pull request on GitHub!
+https://github.com/MrNova420/NCSPSB-Mobile-Performance-Dashboard
 
-💬 Feel free to share your experience or suggest features.
+Feel free to fork, report issues, or contribute improvements.
 
-vbnet
-Copy
-Edit
-
----
-
+License
+This project is licensed under the MIT License — see the LICENSE file for details.
